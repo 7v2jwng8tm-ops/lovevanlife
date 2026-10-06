@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoveVanLife</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Biblioteka Leaflet do interaktywnej mapy -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --bg-page: #efebe4;
+            --text-main: #332d29;
+            --text-sub: #6c645e;
+            --card-yellow: #f2e7c9;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Montserrat', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--bg-page); color: var(--text-main); font-family: var(--font-sans); line-height: 1.5; padding-top: 70px; overflow-x: hidden; }
+        
+        /* STAŁY PASEK MENU */
+        .global-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(239, 235, 228, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid #dfd7cc;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 15px 20px;
+            z-index: 1000;
+        }
+        .global-nav a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-family: var(--font-serif);
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .global-nav a:hover {
+            color: var(--text-sub);
+        }
+
+        /* HERO */
+        .hero { position: relative; width: 100%; height: 85vh; min-height: 540px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .hero-video { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 100%; min-height: 100%; object-fit: cover; z-index: 1; }
+        .hero-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 2; }
+        
+        /* LOGO Z VANEM */
+        .hero-logo-center { 
+            position: relative; 
+            z-index: 3; 
+            text-align: center; 
+        }
+        .hero-logo-center img { 
+            width: 250px; 
+            height: 250px; 
+            border-radius: 50%; 
+            background: #ffffff; 
+            box-shadow: 0 12px 35px rgba(0,0,0,0.45); 
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+            border: 4px solid #ffffff;
+            transition: transform 0.3s ease;
+        }
+        .hero-logo-center img:hover {
+            transform: scale(1.04);
+        }
+        
+        /* SEKCJE */
+        .section-container { max-width: 1200px; margin: 0 auto; padding: 50px 20px; text-align: center; }
+        .section-title { font-family: var(--font-serif); font-size: 24px; letter-spacing: 4px; text-transform: uppercase; font-weight: 600; margin-bottom: 35px; }
+        
+        /* 1. CAMPER IN */
+        .camper-in-box { display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 15px; }
+        .camper-in-box img { 
+            width: auto; 
+            max-width: 90%; 
+            height: auto; 
+            max-height: 450px; 
+            object-fit: contain; 
+            display: block; 
+        }
+        .script-badge { font-family: var(--font-serif); font-style: italic; font-size: 24px; margin: 10px 0 25px; }
+        .models-trio { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px; gap: 15px; }
+        .models-trio h5 { font-family: var(--font-serif); font-size: 14px; text-transform: uppercase; margin-bottom: 3px; }
+        .models-trio span { font-size: 11px; color: var(--text-sub); }
+
+        /* 2. ZALETY - KARTY POWIĘKSZONE O 30% I ZDJĘCIA WYPEŁNIAJĄCE SŁAJD (OBJECT-FIT: COVER) */
+        .full-width-section {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            padding: 50px 0;
+            overflow: hidden;
+        }
+        .slider-full-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding: 20px 0;
+        }
+        .slides-track {
+            display: flex;
+            gap: 45px;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            padding: 0 5vw;
+            cursor: grab;
+            user-select: none;
+        }
+        .slides-track:active {
+            cursor: grabbing;
+        }
+        .slide-card {
+            flex: 0 0 975px; /* Powiększone o 30% z 750px do 975px */
+            max-width: 88vw;
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.09);
+            border: 1px solid #dfd7cc;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .slide-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.15);
+        }
+        .slide-card img {
+            width: 100%;
+            height: 675px; /* Powiększone o 30% z 520px do 675px */
+            object-fit: cover; /* Wypełnia całe pole slajdu bez pustych miejsc */
+            object-position: center;
+            display: block;
+        }
+        .slide-card-content {
+            padding: 40px 35px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .slide-card-content h4 {
+            font-family: var(--font-serif);
+            font-size: 30px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            color: var(--text-main);
+        }
+        .slide-card-content p {
+            font-size: 17px;
+            color: var(--text-sub);
+            line-height: 1.7;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        .slider-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--text-main);
+            border: 1px solid #dfd7cc;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .slider-nav-btn:hover {
+            background: #ffffff;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .slider-nav-btn.prev { left: 3vw; }
+        .slider-nav-btn.next { right: 3vw; }
+
+        /* 3. SPRZEDAŻ */
+        .sprzedaz-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 30px; align-items: center; text-align: left; }
+        .sprzedaz-text .price { font-family: var(--font-serif); font-size: 18px; font-weight: 700; margin-bottom: 15px; }
+        .sprzedaz-text p { font-size: 12px; color: var(--text-sub); margin-bottom: 12px; }
+        .sprzedaz-layout img { 
+            width: 100%; 
+            height: auto; 
+            max-height: 480px; 
+            object-fit: contain; 
+            display: block; 
+        }
+        
+        /* 4. WYNAJEM */
+        .wynajem-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 30px; text-align: left; margin-bottom: 35px; }
+        .wynajem-info p { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; }
+        .wynajem-info ul { list-style: none; }
+        .wynajem-info ul li { font-size: 12px; color: var(--text-sub); margin-bottom: 5px; }
+        .calendar-table-card { border: 1px solid #b7aba1; padding: 15px; background: rgba(255, 255, 255, 0.4); }
+        .canva-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .canva-table th, .canva-table td { border: 1px solid #b7aba1; padding: 6px; font-size: 11px; text-align: center; }
+        .booking-inputs { display: flex; flex-direction: column; gap: 8px; }
+        .booking-inputs input, .booking-inputs select, .booking-inputs button { padding: 8px; font-size: 12px; border: 1px solid #b7aba1; background: #fff; }
+        .booking-inputs button { background: var(--text-main); color: #fff; font-family: var(--font-serif); cursor: pointer; text-transform: uppercase; }
+        
+        /* GALERIA 3 ZDJĘĆ WNĘTRZ */
+        .trio-gallery { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
+            align-items: center;
+        }
+        .trio-gallery img { 
+            width: 100%; 
+            height: auto; 
+            max-height: 340px; 
+            object-fit: contain; 
+            display: block; 
+            border-radius: 4px;
+        }
+
+        /* WYNAJEM - DOSTĘPNE WKRÓTCE / BLOKADA */
+        .wynajem-section { position: relative; }
+        .wynajem-soon-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: -10px auto 30px;
+            padding: 16px 24px;
+            max-width: 620px;
+            background: var(--text-main);
+            color: #fff;
+            border: 1px solid #211d1a;
+            border-radius: 6px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+            font-family: var(--font-serif);
+            font-size: 21px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .wynajem-soon-banner i { font-size: 18px; }
+        .wynajem-locked {
+            position: relative;
+            opacity: 0.72;
+        }
+        .wynajem-locked::after {
+            content: "DOSTĘPNE WKRÓTCE";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(239, 235, 228, 0.62);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            color: var(--text-main);
+            font-family: var(--font-serif);
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            pointer-events: auto;
+            cursor: not-allowed;
+            z-index: 20;
+        }
+
+        /* 5. INTERAKTYWNA MAPA BIWAKÓW I NOCLEGÓW */
+        .map-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .map-filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #b7aba1;
+            background: #fff;
+            font-family: var(--font-serif);
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .map-filter-btn.active, .map-filter-btn:hover {
+            background: var(--text-main);
+            color: #fff;
+        }
+        #van-map {
+            width: 100%;
+            height: 460px;
+            border-radius: 8px;
+            border: 1px solid #b7aba1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            z-index: 10;
+        }
+        .custom-popup h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+        .custom-popup p {
+            font-size: 11px;
+            margin-bottom: 4px;
+            color: #555;
+            line-height: 1.4;
+        }
+        .tag-free { color: #2e7d32; font-weight: bold; }
+        .tag-paid { color: #e65100; font-weight: bold; }
+        
+        /* 6. IN THE PRESS */
+        .press-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .press-box { background-color: var(--card-yellow); padding: 25px 15px; font-family: var(--font-serif); font-size: 13px; font-style: italic; min-height: 160px; display: flex; flex-direction: column; justify-content: space-between; }
+        .press-author { margin-top: 10px; font-style: normal; font-size: 10px; font-family: var(--font-sans); text-transform: uppercase; color: var(--text-sub); }
+        .editable-tile { border: 1px dashed #b7aba1; padding: 15px; margin-top: 25px; font-size: 11px; cursor: pointer; color: var(--text-sub); }
+        footer { padding: 30px 20px; text-align: center; font-size: 11px; color: var(--text-sub); border-top: 1px solid rgba(0,0,0,0.06); }
+        
+        @media (max-width: 768px) { 
+            .models-trio, .sprzedaz-layout, .wynajem-layout, .trio-gallery, .press-grid { grid-template-columns: 1fr; } 
+            .global-nav { gap: 10px; font-size: 11px; padding: 10px 5px; flex-wrap: wrap; }
+            .global-nav a { font-size: 11px; letter-spacing: 1px; }
+            body { padding-top: 95px; }
+            .slide-card { flex: 0 0 88vw; }
+            .slide-card img { height: 350px; }
+            .slider-nav-btn { width: 48px; height: 48px; font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- STAŁY PASEK MENU -->
+    <nav class="global-nav">
+        <a href="#camper-in">Camper In</a>
+        <a href="#zalety">Zalety</a>
+        <a href="#sprzedaz">Sprzedaż</a>
+        <a href="#wynajem">Wynajem</a>
+        <a href="#mapa">Gdzie na nocleg?</a>
+        <a href="#press">In the Press</a>
+    </nav>
+
+    <section class="hero">
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="Filmik.mov" type="video/quicktime">
+            <source src="Filmik.mov" type="video/mp4">
+        </video>
+        <div class="hero-overlay"></div>
+        
+        <!-- LOGO Z VANEM -->
+        <div class="hero-logo-center">
+            <img src="logo.png" alt="Love Life Van Life Logo">
+        </div>
+    </section>
+
+    <!-- 1. CAMPER IN -->
+    <section class="section-container" id="camper-in">
+        <h2 class="section-title">CAMPER IN</h2>
+        <div class="camper-in-box">
+            <img src="van.png" alt="Zabudowa">
+        </div>
+        <div class="script-badge">w 30 min</div>
+        <div class="models-trio">
+            <div><h5>Fiat Ducato L3H2</h5><span>4 miejsca &bull; prysznic</span></div>
+            <div><h5>Citroen Jumper L2H2</h5><span>Kompaktowy &bull; miejski</span></div>
+            <div><h5>Renault Master L3H2</h5><span>Maksimum przestrzeni</span></div>
+        </div>
+    </section>
+
+    <!-- 2. ZALETY - POWIĘKSZONE O 30% KARTY Z OBRAZAMI WYPEŁNIAJĄCYMI CAŁE POLE -->
+    <div class="full-width-section" id="zalety">
+        <h2 class="section-title" style="text-align: center;">ZALETY</h2>
+        <div class="slider-full-wrapper">
+            <button class="slider-nav-btn prev" id="prevBtn" title="Poprzedni">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="slides-track" id="slidesTrack">
+                <div class="slide-card">
+                    <img src="auto.jpg" alt="Niezależność">
+                    <div class="slide-card-content">
+                        <h4>Niezależność</h4>
+                        <p>Odkrywaj nowe zakątki bez sztywnych planów i rezerwowania drogich hoteli. Podróżuj we własnym tempie tam, gdzie zaprowadzi Cię droga.</p>
+                    </div>
+                </div>
+                <div class="slide-card">
+                    <img src="przekrój.jpg" alt="Pełne Wyposażenie">
+                    <div class="slide-card-content">
+                        <h4>Pełne Wyposażenie</h4>
+                        <p>Zintegrowana kuchnia, ciepła woda, prysznic, sypialnia z widokiem na góry oraz wydajne ogrzewanie postojowe zapewniające komfort o każdej porze roku.</p>
+                    </div>
+                </div>
+                <div class="slide-card">
+                    <img src="biuro.jpeg" alt="Mobilne Biuro">
+                    <div class="slide-card-content">
+                        <h4>Mobilne Biuro</h4>
+                        <p>Połącz pracę zdalną z przygodą życia. Niezależne zasilanie akumulatorowe i panel słoneczny pozwolą Ci pracować z najpiękniejszych zakątków natury.</p>
+                    </div>
+                </div>
+                <div class="slide-card">
+                    <img src="natura.jpeg" alt="Bliskość Natury">
+                    <div class="slide-card-content">
+                        <h4>Bliskość Natury</h4>
+                        <p>Budź się każdego ranka z zupełnie inną panoramą za oknem — szum potoku, leśna polana lub widok na alpejskie szczyty na wyciągnięcie ręki.</p>
+                    </div>
+                </div>
+            </div>
+            <button class="slider-nav-btn next" id="nextBtn" title="Następny">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. SPRZEDAŻ -->
+    <section class="section-container" id="sprzedaz">
+        <h2 class="section-title">SPRZEDAŻ</h2>
+        <div class="sprzedaz-layout">
+            <div class="sprzedaz-text">
+                <div class="price">CENA: OD 45 TYS. EURO</div>
+                <p>Zabudowy wyprawowe wykonane na zamówienie. Każdy model posiada izolację termiczną premium oraz instalację solarną.</p>
+            </div>
+            <img src="tyl.png" alt="Sprzedaż">
+        </div>
+    </section>
+
+    <!-- 4. WYNAJEM -->
+    <section class="section-container wynajem-section" id="wynajem">
+        <h2 class="section-title">WYNAJEM</h2>
+        <div class="wynajem-soon-banner" role="status" aria-label="Wynajem dostępny wkrótce">
+            <i class="fa-solid fa-clock"></i>
+            <span>Dostępne wkrótce</span>
+        </div>
+        <div class="wynajem-locked">
+            <div class="wynajem-layout">
+                <div class="wynajem-info">
+                    <p>Wynajmij gotowego campervana i wyrusz w podróż:</p>
+                    <ul>
+                        <li>&bull; Prawo jazdy kat. B</li>
+                        <li>&bull; Brak limitu kilometrów od 5 dni</li>
+                        <li>&bull; Pełne ubezpieczenie AC/OC/Assistance</li>
+                    </ul>
+                </div>
+                <div class="calendar-table-card">
+                    <table class="canva-table">
+                        <thead><tr><th>Model</th><th>Niski Sezon</th><th>Wysoki Sezon</th></tr></thead>
+                        <tbody>
+                            <tr><td>Fiat Ducato</td><td>350 zł/doba</td><td>490 zł/doba</td></tr>
+                            <tr><td>Citroen Jumper</td><td>320 zł/doba</td><td>450 zł/doba</td></tr>
+                        </tbody>
+                    </table>
+                    <form id="resForm" class="booking-inputs">
+                        <input type="date" id="dateStart" required disabled>
+                        <input type="date" id="dateEnd" required disabled>
+                        <select id="modelChoice" disabled>
+                            <option>Fiat Ducato L3H2</option>
+                            <option>Citroen Jumper L2H2</option>
+                        </select>
+                        <button type="submit" disabled>Zarezerwuj Termin</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- GALERIA 3 ZDJĘĆ WNĘTRZ -->
+            <div class="trio-gallery">
+                <img src="lod.png" alt="Wnętrze 1">
+                <img src="god.png" alt="Wnętrze 2">
+                <img src="pod.png" alt="Wnętrze 3">
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. INTERAKTYWNA MAPA BIWAKÓW I NOCLEGÓW -->
+    <section class="section-container" id="mapa">
+        <h2 class="section-title">Gdzie na nocleg vanem?</h2>
+        
+        <div class="map-controls">
+            <button class="map-filter-btn active" onclick="filterSpots('all', this)">Wszystkie miejsca</button>
+            <button class="map-filter-btn" onclick="filterSpots('free', this)">Darmowe (Na dziko)</button>
+            <button class="map-filter-btn" onclick="filterSpots('paid', this)">Kempingi & Płatne Miejscówki</button>
+        </div>
+
+        <div id="van-map"></div>
+    </section>
+
+    <!-- 6. IN THE PRESS -->
+    <section class="section-container" id="press">
+        <h2 class="section-title">In the Press</h2>
+        <div class="press-grid">
+            <div class="press-box">
+                <p>„Zabudowy wykonane z dbałością o każdy milimetr. Doskonałe połączenie luksusu z duchem vanlife.”</p>
+                <div class="press-author">— Magazyn Podróżnik</div>
+            </div>
+            <div class="press-box">
+                <p>„Najbardziej przemyślany układ wnętrza na rynku. Spanie i gotowanie w górach nigdy nie było tak proste.”</p>
+                <div class="press-author">— Camp & Road Journal</div>
+            </div>
+            <div class="press-box">
+                <p>„LoveVanLife redefiniuje pojęcie wolności w podróży kamperem po Europie.”</p>
+                <div class="press-author">— Vanlife Weekly</div>
+            </div>
+        </div>
+        <div class="editable-tile" onclick="alert('Kolejne okienko dodasz kopiując ten fragment kodu w HTML!');">
+            + Dodaj nowe okienko (moduł do edycji)
+        </div>
+    </section>
+
+    <footer>&copy; 2026 LoveVanLife &bull; www.lovevanlife.com</footer>
+
+    <script>
+        // --- 1. KARUZELA Z POWIĘKSZONYMI SLAJDAMI I OBSŁUGĄ DRAG & DROP ---
+        const track = document.getElementById('slidesTrack');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        let currentPosition = 0;
+
+        function getStep() {
+            const firstCard = track.querySelector('.slide-card');
+            return firstCard ? firstCard.offsetWidth + 45 : 1020; // 975px szerokości + 45px odstępu
+        }
+
+        function getMaxScroll() {
+            return -(track.scrollWidth - window.innerWidth + (window.innerWidth * 0.05));
+        }
+
+        function slideNext() {
+            const maxScroll = getMaxScroll();
+            currentPosition -= getStep();
+            if (currentPosition < maxScroll) {
+                currentPosition = maxScroll;
+            }
+            track.style.transform = `translateX(${currentPosition}px)`;
+        }
+
+        function slidePrev() {
+            currentPosition += getStep();
+            if (currentPosition > 0) {
+                currentPosition = 0;
+            }
+            track.style.transform = `translateX(${currentPosition}px)`;
+        }
+
+        nextBtn.addEventListener('click', slideNext);
+        prevBtn.addEventListener('click', slidePrev);
+
+        // Drag to scroll
+        let isDragging = false, startX, startPos;
+
+        track.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.pageX;
+            startPos = currentPosition;
+            track.style.transition = 'none';
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            track.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+        });
+
+        track.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const walk = (e.pageX - startX);
+            currentPosition = startPos + walk;
+            
+            if (currentPosition > 0) currentPosition = 0;
+            const maxScroll = getMaxScroll();
+            if (currentPosition < maxScroll) currentPosition = maxScroll;
+
+            track.style.transform = `translateX(${currentPosition}px)`;
+        });
+
+        // --- 2. KALENDARZ REZERWACJI ---
+        const d1 = document.getElementById('dateStart');
+        const d2 = document.getElementById('dateEnd');
+        const today = new Date().toISOString().split('T')[0];
+        d1.min = today; d2.min = today;
+        d1.addEventListener('change', () => { d2.min = d1.value; });
+
+        // --- 3. MAPA ---
+        const map = L.map('van-map').setView([49.45, 20.15], 8);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO &copy; OpenStreetMap contributors',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        const spots = [
+            { name: "Polana pod Tatrami (Widokowa)", type: "free", lat: 49.27, lng: 19.98, desc: "Darmowy punkt postojowy z panoramą Tatr.", tags: "Darmowe • Na dziko" },
+            { name: "Kemping Czorsztyn nad Jeziorem", type: "paid", lat: 49.44, lng: 20.25, desc: "Dostęp do prądu, czysta woda, prysznice.", tags: "Płatne (ok. 80 zł) • Pełen serwis" },
+            { name: "Leśny parking pod Babią Górą", type: "free", lat: 49.58, lng: 19.53, desc: "Oficjalny parking leśny Lasów Państwowych.", tags: "Darmowe • Spokój w lesie" },
+            { name: "Autocamp Pieniny", type: "paid", lat: 49.41, lng: 20.42, desc: "Sprawdzony kemping u stóp Trzech Koron.", tags: "Płatne • Sanitariaty & Prąd" },
+            { name: "Przełęcz Knurowska (Gorce)", type: "free", lat: 49.51, lng: 20.18, desc: "Darmowy punkt widokowy w Gorcach.", tags: "Darmowe • Widokowe" }
+        ];
+
+        let markers = [];
+
+        function renderMarkers(filter) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            spots.forEach(spot => {
+                if (filter === 'all' || spot.type === filter) {
+                    const marker = L.marker([spot.lat, spot.lng]).addTo(map);
+                    const badgeClass = spot.type === 'free' ? 'tag-free' : 'tag-paid';
+                    const popupContent = `
+                        <div class="custom-popup">
+                            <h4>${spot.name}</h4>
+                            <p class="${badgeClass}">${spot.tags}</p>
+                            <p>${spot.desc}</p>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    markers.push(marker);
+                }
+            });
+        }
+
+        function filterSpots(type, btnElement) {
+            document.querySelectorAll('.map-filter-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            renderMarkers(type);
+        }
+
+        renderMarkers('all');
+    </script>
+</body>
+</html>
